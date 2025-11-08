@@ -15,7 +15,7 @@ export default function Homepage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { chat_uid } = useParams();
-  const { user } = useAuth();
+  const { user, storeUserSearch } = useAuth();
   const [input, setInput] = useState("");
   const [chatID, setChatID] = useState("");
   const [messages, setMessages] = useState<
@@ -110,11 +110,15 @@ export default function Homepage() {
     setMessages((prev) =>
       [...prev, newMessage].filter(
         (p) => p.content !== "Welcome! I'm here to assist you."
-      )
+      ) as { role: "user" | "assistant"; content: string }[]
     );
 
     mutation.mutate({ chat_id: chatID, content: input });
     setInput("");
+
+    if (user) {
+      storeUserSearch(input);
+    }
   };
 
   return (

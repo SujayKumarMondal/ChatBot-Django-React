@@ -17,6 +17,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   register: (username: string, email: string, password: string) => Promise<void>;
+  storeUserSearch: (searchQuery: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -106,8 +107,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("refresh_token");
   };
 
+  // 🔹 Store User Search
+  const storeUserSearch = async (searchQuery: string) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) throw new Error("User is not authenticated");
+
+      const response = await fetch("http://127.0.0.1:7004/api/store_search/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ search_query: searchQuery }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to store search query");
+      }
+    } catch (err: any) {
+      console.error("Error storing search query:", err.message);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut, register }}>
+    <AuthContext.Provider value={{ user, signIn, signOut, register, storeUserSearch }}>
       {children}
     </AuthContext.Provider>
   );

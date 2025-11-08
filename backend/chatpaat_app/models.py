@@ -38,3 +38,15 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"{self.role}: {self.content[:50]}"
+
+
+class UserSearchHistory(models.Model):
+    """
+    Model to store user search history.
+    """
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='search_histories')
+    search_query = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.search_query[:50]}"

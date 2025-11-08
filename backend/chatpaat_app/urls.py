@@ -16,5 +16,6 @@ urlpatterns = [
     path("get_chat_messages/<str:pk>/", views.get_chat_messages, name="get_chat_messages"),
     path("todays_chat/", views.todays_chat, name="todays_chat"),
     path("yesterdays_chat/", views.yesterdays_chat, name="yesterdays_chat"),
-    path("seven_days_chat/", views.seven_days_chat, name="seven_days_chat")
+    path("seven_days_chat/", views.seven_days_chat, name="seven_days_chat"),
+    path("api/store_search/", views.user_search, name="store_user_search")
 ]

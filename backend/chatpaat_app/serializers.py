@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from chatpaat_app.models import Chat, ChatMessage 
+from chatpaat_app.models import Chat, ChatMessage, UserSearchHistory 
 
      
 
@@ -21,3 +21,9 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage 
         fields = ["role", "content"]
+
+
+class UserSearchHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSearchHistory
+        fields = "__all__"

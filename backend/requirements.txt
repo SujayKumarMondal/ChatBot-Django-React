@@ -25,3 +25,4 @@ tzdata==2025.2
 django-cors-headers
 requests
 djangorestframework-simplejwt
+mysqlclient

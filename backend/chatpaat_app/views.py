@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from chatpaat_app.models import Chat, ChatMessage
+from chatpaat_app.models import Chat, ChatMessage, UserSearchHistory
 from chatpaat_app.serializers import ChatMessageSerializer, ChatSerializer
 from django.utils import timezone
 from datetime import timedelta
@@ -217,3 +217,20 @@ def seven_days_chat(request):
     chats = Chat.objects.filter(user=request.user, created_at__lt=yesterday, created_at__gte=seven_days_ago).order_by("-created_at")[:10]
     serializer = ChatSerializer(chats, many=True)
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def user_search(request):
+    """
+    Endpoint to store user search queries.
+    """
+    search_query = request.data.get("search_query")
+
+    if not search_query:
+        return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Store the search query in the database
+    UserSearchHistory.objects.create(user=request.user, search_query=search_query)
+
+    return Response({"message": "Search query stored successfully."}, status=status.HTTP_201_CREATED)
