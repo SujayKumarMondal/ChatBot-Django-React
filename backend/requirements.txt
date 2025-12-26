@@ -27,3 +27,4 @@ requests
 djangorestframework-simplejwt
 mysqlclient
 pymysql
+psycopg[binary]
