@@ -189,6 +189,17 @@ export function AppSidebar() {
     });
   };
 
+  const truncateTitle = (title: string, maxLength: number = 18) => {
+    // Remove quotes if present
+    let cleanTitle = title[0] === "'" || title[0] === '"' ? title.slice(1, -1) : title;
+    
+    // Truncate to max length and add ellipsis if needed
+    if (cleanTitle.length > maxLength) {
+      return cleanTitle.slice(0, maxLength) + "...";
+    }
+    return cleanTitle;
+  };
+
   const allChats = [...recentChats, ...yesterdaysChats, ...sevenDaysChats];
   const favorites = allChats.filter((c) => c.isFavorite);
   const filteredRecent = filterChats(recentChats);
@@ -207,10 +218,8 @@ export function AppSidebar() {
               )}
             >
               <MessageSquare className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">
-                {chat.title[0] === "'" || chat.title[0] === '"'
-                  ? chat.title.slice(1, -1)
-                  : chat.title}
+              <span className="truncate" title={chat.title}>
+                {truncateTitle(chat.title)}
               </span>
             </SidebarMenuButton>
           )}
