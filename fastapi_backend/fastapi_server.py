@@ -10,7 +10,7 @@ from routes import router
 load_dotenv()
 
 # Initialize database
-init_db()
+# init_db()
 
 # Create FastAPI app
 app = FastAPI(title="ChatPaat API", version="1.0.0")
@@ -60,6 +60,6 @@ if __name__ == "__main__":
         "fastapi_server:app",
         host=HOST,
         port=PORT,
-        reload=True,
+        reload=False,
         log_level="info"
     )

@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import MainLayout from "./components/MainLayout";
 import HomePage from "./pages/HomePage";
 import SignInPage from "./pages/SignIn";
+import OAuthCallback from "./pages/OAuthCallback";
 import { AboutPage } from "./pages/AboutPage";
 import { AboutMePage } from "./pages/AboutMePage";
 import RegisterPage from "./pages/RegisterPage";
@@ -21,6 +22,7 @@ const App = () => {
             <Routes>
               {/* Auth routes */}
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/oauth-callback" element={<OAuthCallback />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/about-me" element={<AboutMePage />} />

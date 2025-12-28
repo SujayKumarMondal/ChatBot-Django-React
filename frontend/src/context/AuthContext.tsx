@@ -15,6 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithTokens: (access: string, refresh: string, user: User) => void;
   signOut: () => void;
   register: (username: string, email: string, password: string) => Promise<void>;
   storeUserSearch: (searchQuery: string) => Promise<void>;
@@ -109,6 +110,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  // 🔹 Sign In With Tokens (used by OAuth callback)
+  const signInWithTokens = (access: string, refresh: string, userProfile: User) => {
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+    setUser(userProfile);
+    localStorage.setItem("user", JSON.stringify(userProfile));
+    setRefreshTrigger(prev => prev + 1);
   };
 
   // 🔹 Store User Search
@@ -136,7 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut, register, storeUserSearch, refreshTrigger }}>
+    <AuthContext.Provider value={{ user, signIn, signInWithTokens, signOut, register, storeUserSearch, refreshTrigger }}>
       {children}
     </AuthContext.Provider>
   );

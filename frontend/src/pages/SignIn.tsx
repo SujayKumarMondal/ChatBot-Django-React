@@ -4,6 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "your_googl951884061600-pscth36b1shbipqnnclmq4dqk8pku8vi.apps.googleusercontent.come_client_id";
+
 export default function SignInPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -52,6 +54,26 @@ export default function SignInPage() {
         />
 
         <Button type="submit" className="w-full">Sign In</Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full mt-2"
+          onClick={() => {
+            const redirectUri = `${window.location.origin}/oauth-callback`;
+            const params = new URLSearchParams({
+              client_id: GOOGLE_CLIENT_ID,
+              redirect_uri: redirectUri,
+              response_type: "code",
+              scope: "openid email profile",
+              access_type: "offline",
+              prompt: "consent",
+            });
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+          }}
+        >
+          Sign in with Google
+        </Button>
         <p className="text-center text-sm">
           Don’t have an account?{" "}
           <span

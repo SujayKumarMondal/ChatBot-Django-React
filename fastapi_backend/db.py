@@ -17,7 +17,12 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 encoded_password = quote(DB_PASSWORD, safe='')
 
 # Create connection string
-DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# If DB_NAME is not set, fall back to a local sqlite database for easy local dev.
+if DB_NAME:
+    DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+else:
+    sqlite_path = os.path.join(os.path.dirname(__file__), "db.sqlite3")
+    DATABASE_URL = f"sqlite:///{sqlite_path}"
 
 # Create engine
 engine = create_engine(

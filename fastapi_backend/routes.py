@@ -14,6 +14,11 @@ from auth import (
     create_refresh_token, verify_token
 )
 
+# Google OAuth settings
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
 # Groq API settings
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_API_URL = os.getenv("GROQ_API_URL")
@@ -205,6 +210,115 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
         "user": {
             "username": user.username,
             "email": user.email
+        }
+    }
+
+
+# ======================= Google OAuth Endpoints =======================
+
+
+def _ensure_unique_username(db: Session, base_username: str) -> str:
+    username = base_username
+    counter = 1
+    while db.query(CustomUser).filter(CustomUser.username == username).first():
+        username = f"{base_username}{counter}"
+        counter += 1
+    return username
+
+
+def _exchange_code_for_tokens(code: str, redirect_uri: str) -> dict:
+    token_url = "https://oauth2.googleapis.com/token"
+    data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    }
+    resp = requests.post(token_url, data=data, timeout=10)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _get_google_userinfo(access_token: str) -> dict:
+    userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.get(userinfo_url, headers=headers, timeout=10)
+    resp.raise_for_status()
+    return resp.json()
+
+
+class GoogleExchangeRequest(BaseModel):
+    code: str
+    redirect_uri: Optional[str] = None
+
+
+@router.post("/api/auth/google/exchange/")
+def google_exchange(req: GoogleExchangeRequest, db: Session = Depends(get_db)):
+    """
+    Exchange Google OAuth2 authorization code for tokens, create/upsert user,
+    and return local JWT tokens.
+    Frontend should send the `code` it received and the `redirect_uri` used.
+    """
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Google OAuth client ID/secret not configured")
+
+    redirect_uri = req.redirect_uri or f"{FRONTEND_URL}/oauth-callback"
+
+    try:
+        token_data = _exchange_code_for_tokens(req.code, redirect_uri)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Failed to exchange code: {str(e)}")
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="No access token returned from Google")
+
+    try:
+        info = _get_google_userinfo(access_token)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Failed to fetch userinfo: {str(e)}")
+
+    email = info.get("email")
+    name = info.get("name") or ""
+    sub = info.get("sub")
+
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Google did not return an email for this account")
+
+    # Upsert user
+    user = db.query(CustomUser).filter(CustomUser.email == email).first()
+    if not user:
+        base_username = email.split("@")[0]
+        username = _ensure_unique_username(db, base_username)
+        # Create a random password since we don't use it for OAuth users
+        random_pw = str(uuid.uuid4())
+        user = CustomUser(
+            username=username,
+            email=email,
+            password=hash_password(random_pw),
+            first_name=name
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # Create local JWTs
+    access = create_access_token({"sub": str(user.id)})
+    refresh = create_refresh_token({"sub": str(user.id)})
+
+    return {
+        "access": access,
+        "refresh": refresh,
+        "user": {
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name
         }
     }
 
