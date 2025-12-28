@@ -6,12 +6,8 @@ import {
   MessageSquarePlus,
   Search,
   Star,
-  Folder,
   Archive,
   Trash2,
-  ChevronDown,
-  ChevronRight,
-  Pin,
   AlertTriangle,
 } from "lucide-react";
 
@@ -54,12 +50,11 @@ export function AppSidebar() {
   const [recentChats, setRecentChats] = useState<IChat[]>([]);
   const [yesterdaysChats, setYesterdaysChat] = useState<IChat[]>([]);
   const [sevenDaysChats, setSevenDaysChat] = useState<IChat[]>([]);
-  const { user, signOut, refreshTrigger } = useAuth();
+  const { user, refreshTrigger } = useAuth();
   const { addToast } = useToast();
   const token = localStorage.getItem("access_token") || "";
   const [searchQuery, setSearchQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     chatId: string | null;
@@ -122,13 +117,6 @@ export function AppSidebar() {
     return () => window.removeEventListener("focus", handleFocus);
   }, [token]);
 
-  const handleLogout = () => {
-    setRecentChats([]);
-    setYesterdaysChat([]);
-    setSevenDaysChat([]);
-    signOut();
-  };
-
   const toggleFavorite = (chatId: string) => {
     const updateChats = (chats: IChat[]) =>
       chats.map((chat) =>
@@ -169,14 +157,6 @@ export function AppSidebar() {
         duration: 3000,
       });
     }
-  };
-
-  const toggleFolder = (folder: string) => {
-    setExpandedFolders((prev) =>
-      prev.includes(folder)
-        ? prev.filter((f) => f !== folder)
-        : [...prev, folder]
-    );
   };
 
   const filterChats = (chats: IChat[]) => {

@@ -14,9 +14,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithTokens: (access: string, refresh: string, user: User) => void;
   signOut: () => void;
+  logout: () => void; // Alias for signOut, used in ProfilePage
   register: (username: string, email: string, password: string) => Promise<void>;
   storeUserSearch: (searchQuery: string) => Promise<void>;
   refreshTrigger: number; // Trigger for external components to refetch on auth change
@@ -26,13 +28,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Restore user on refresh
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
+    const savedToken = localStorage.getItem("access_token");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+    }
+    if (savedToken) {
+      setToken(savedToken);
     }
   }, []);
 
@@ -53,6 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const data = await response.json();
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
+    setToken(data.access);
 
     const userProfile: User = {
       username: data.user.username,
@@ -88,6 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Save tokens from register response
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
+      setToken(data.access);
 
       // Save user profile from register response
       const userProfile: User = {
@@ -107,16 +116,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 🔹 Sign Out
   const signOut = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     setRefreshTrigger(prev => prev + 1);
   };
 
+  // 🔹 Logout (alias for signOut, used in ProfilePage)
+  const logout = () => {
+    signOut();
+  };
+
   // 🔹 Sign In With Tokens (used by OAuth callback)
   const signInWithTokens = (access: string, refresh: string, userProfile: User) => {
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
+    setToken(access);
     setUser(userProfile);
     localStorage.setItem("user", JSON.stringify(userProfile));
     setRefreshTrigger(prev => prev + 1);
@@ -147,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signInWithTokens, signOut, register, storeUserSearch, refreshTrigger }}>
+    <AuthContext.Provider value={{ user, token, signIn, signInWithTokens, signOut, logout, register, storeUserSearch, refreshTrigger }}>
       {children}
     </AuthContext.Provider>
   );

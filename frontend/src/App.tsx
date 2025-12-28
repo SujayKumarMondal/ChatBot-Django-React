@@ -12,6 +12,7 @@ import { ToastProvider } from "./context/ToastContext";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
   return (
@@ -26,8 +27,9 @@ const App = () => {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/about-me" element={<AboutMePage />} />
-              {/* Settings route */}
+              {/* Settings & Profile routes */}
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               {/* App layout */}
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<HomePage />} />

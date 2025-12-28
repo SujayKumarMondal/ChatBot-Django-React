@@ -66,6 +66,29 @@ class SearchQueryRequest(BaseModel):
     search_query: str
 
 
+class UserProfileResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    date_joined: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateProfileRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
 # ======================= Helper Functions =======================
 
 def get_current_user(token: str, db: Session) -> CustomUser:
@@ -131,9 +154,56 @@ def create_chat_title(user_message: str) -> str:
     return title
 
 
+
+# ======================= Default ========================== #
+
+@router.get("/")
+def read_root():
+    """Root endpoint"""
+    return {"message": "Welcome to ChatPaat API"}
+
+
+@router.get("/health/")
+def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy"}
+
+
+@router.post("/api/store_search/")
+def user_search(
+    search_data: SearchQueryRequest,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Store user search query in the database
+    """
+    # Get current user
+    user = get_current_user(authorization, db)
+    
+    if not search_data.search_query:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Search query is required."
+        )
+    
+    # Store search query
+    search_history = UserSearchHistory(
+        user_id=user.id,
+        search_query=search_data.search_query,
+        created_at=datetime.utcnow()
+    )
+    db.add(search_history)
+    db.commit()
+    
+    return {
+        "message": "Search query stored successfully."
+    }
+
+
 # ======================= Authentication Endpoints =======================
 
-@router.post("/api/register/")
+@router.post("/api/register/", tags=["Authentication"])
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
     """
     Register a new user
@@ -179,7 +249,7 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/api/login/")
+@router.post("/api/login/", tags=["Authentication"])
 def login(user_data: UserLogin, db: Session = Depends(get_db)):
     """
     Login user and return JWT tokens
@@ -253,7 +323,7 @@ class GoogleExchangeRequest(BaseModel):
     redirect_uri: Optional[str] = None
 
 
-@router.post("/api/auth/google/exchange/")
+@router.post("/api/auth/google/exchange/", tags=["Authentication"])
 def google_exchange(req: GoogleExchangeRequest, db: Session = Depends(get_db)):
     """
     Exchange Google OAuth2 authorization code for tokens, create/upsert user,
@@ -323,9 +393,138 @@ def google_exchange(req: GoogleExchangeRequest, db: Session = Depends(get_db)):
     }
 
 
+# ======================= User Profile Endpoints =======================
+
+@router.get("/api/profile/", tags=["Profile"])
+def get_profile(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current user's profile information
+    """
+    user = get_current_user(authorization, db)
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "date_joined": user.date_joined
+    }
+
+
+@router.put("/api/profile/", tags=["Profile"])
+def update_profile(
+    profile_data: UpdateProfileRequest,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Update user's profile information (name, email)
+    """
+    user = get_current_user(authorization, db)
+    
+    email_updated = False
+    
+    # Check if email is being updated and if it's already taken
+    if profile_data.email and profile_data.email != user.email:
+        existing_email = db.query(CustomUser).filter(
+            CustomUser.email == profile_data.email
+        ).first()
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already exists."
+            )
+        user.email = profile_data.email
+        email_updated = True
+    
+    if profile_data.first_name is not None:
+        user.first_name = profile_data.first_name
+    if profile_data.last_name is not None:
+        user.last_name = profile_data.last_name
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "message": "Profile updated successfully",
+        "email_updated": email_updated,
+        "email": user.email,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name
+        }
+    }
+
+
+@router.post("/api/profile/change-password/", tags=["Profile"])
+def change_password(
+    password_data: ChangePasswordRequest,
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Change user's password
+    """
+    user = get_current_user(authorization, db)
+    
+    if not verify_password(password_data.old_password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Old password is incorrect"
+        )
+    
+    if password_data.new_password == password_data.old_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from old password"
+        )
+    
+    user.password = hash_password(password_data.new_password)
+    db.commit()
+    
+    return {
+        "message": "Password changed successfully"
+    }
+
+
+@router.delete("/api/profile/", tags=["Profile"])
+def delete_account(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete user account and all associated data
+    """
+    user = get_current_user(authorization, db)
+    
+    try:
+        user_id = user.id
+        username = user.username
+        db.delete(user)
+        db.commit()
+        
+        return {
+            "message": "Account deleted successfully",
+            "user_id": user_id,
+            "username": username
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error deleting account: {str(e)}"
+        )
+
+
 # ======================= Chat Endpoints =======================
 
-@router.post("/prompt_gpt/")
+@router.post("/prompt_gpt/", tags=["Chat"])
 def prompt_gpt(
     prompt_data: PromptRequest,
     authorization: str = Header(None),
@@ -429,7 +628,7 @@ def prompt_gpt(
     return {"reply": groq_reply}
 
 
-@router.get("/get_chat_messages/{chat_id}/")
+@router.get("/get_chat_messages/{chat_id}/", tags=["Chat"])
 def get_chat_messages(
     chat_id: str,
     authorization: str = Header(None),
@@ -470,7 +669,7 @@ def get_chat_messages(
     ]
 
 
-@router.get("/todays_chat/")
+@router.get("/todays_chat/", tags=["Chat"])
 def todays_chat(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
@@ -498,7 +697,7 @@ def todays_chat(
     ]
 
 
-@router.get("/yesterdays_chat/")
+@router.get("/yesterdays_chat/", tags=["Chat"])
 def yesterdays_chat(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
@@ -529,7 +728,7 @@ def yesterdays_chat(
     ]
 
 
-@router.get("/seven_days_chat/")
+@router.get("/seven_days_chat/", tags=["Chat"])
 def seven_days_chat(
     authorization: str = Header(None),
     db: Session = Depends(get_db)
@@ -561,7 +760,7 @@ def seven_days_chat(
     ]
 
 
-@router.delete("/delete_chat/{chat_id}/")
+@router.delete("/delete_chat/{chat_id}/", tags=["Chat"])
 def delete_chat(
     chat_id: str,
     authorization: str = Header(None),
@@ -602,33 +801,3 @@ def delete_chat(
         )
 
 
-@router.post("/api/store_search/")
-def user_search(
-    search_data: SearchQueryRequest,
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
-):
-    """
-    Store user search query in the database
-    """
-    # Get current user
-    user = get_current_user(authorization, db)
-    
-    if not search_data.search_query:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Search query is required."
-        )
-    
-    # Store search query
-    search_history = UserSearchHistory(
-        user_id=user.id,
-        search_query=search_data.search_query,
-        created_at=datetime.utcnow()
-    )
-    db.add(search_history)
-    db.commit()
-    
-    return {
-        "message": "Search query stored successfully."
-    }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import vs2015 from "react-syntax-highlighter/dist/esm/styles/prism/atom-dark";
@@ -109,20 +109,22 @@ export default function Message({
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
                 components={{
-                  code({ node, inline, className, children, ...props }) {
+                  code(props: any) {
+                    const { node, inline, className, children, ...rest } = props;
                     const match = /language-(\w+)/.exec(className || "");
                     const codeContent = String(children).replace(/\n$/, "");
-                    const index = parseInt(node?.position?.start.offset || "0");
+                    const startOffset = node?.position?.start?.offset || 0;
+                    const index = typeof startOffset === 'number' ? startOffset : parseInt(String(startOffset));
 
                     if (!inline && match) {
                       return (
                         <div className="relative group my-3 bg-background rounded-lg overflow-hidden border border-border">
                           <SyntaxHighlighter
-                            style={vs2015}
+                            style={vs2015 as any}
                             language={match[1]}
                             PreTag="pre"
                             className="!m-0 !bg-background !rounded-lg"
-                            {...props}
+                            {...rest}
                           >
                             {codeContent}
                           </SyntaxHighlighter>

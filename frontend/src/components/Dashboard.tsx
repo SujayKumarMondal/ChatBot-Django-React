@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useState, useEffect } from "react";
 import { MessageSquare, Clock, Zap, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -91,48 +90,18 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Charts Section */}
+      {/* Charts Section - Requires recharts 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Weekly Activity */}
         <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
           <h3 className="text-lg font-semibold mb-4 text-foreground">Weekly Activity</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={stats.weeklyActivity}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="day" stroke="var(--muted-foreground)" />
-              <YAxis stroke="var(--muted-foreground)" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Bar dataKey="count" fill="var(--primary)" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="text-muted-foreground">Charts require additional setup</p>
         </div>
-
-        {/* Topic Breakdown */}
         <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
           <h3 className="text-lg font-semibold mb-4 text-foreground">Topic Breakdown</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={stats.topicBreakdown}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="topic" stroke="var(--muted-foreground)" />
-              <YAxis stroke="var(--muted-foreground)" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Line type="monotone" dataKey="count" stroke="var(--accent)" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          <p className="text-muted-foreground">Charts require additional setup</p>
         </div>
       </div>
+      */}
 
       {/* Quick Actions */}
       <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg border border-primary/20 p-6">

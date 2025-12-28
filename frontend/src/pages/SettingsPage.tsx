@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTheme, themePresets, accentColors, Theme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
-import { Sun, Moon, Settings, ChevronLeft } from "lucide-react";
+import { Moon, Settings, ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function SettingsPage() {
@@ -9,7 +9,6 @@ export default function SettingsPage() {
   const {
     currentTheme,
     setTheme,
-    toggleDarkMode,
     accentColor,
     setAccentColor,
     highContrast,

@@ -104,3 +104,66 @@ export async function deleteChat(chatId: string, token: string) {
     handleError(err);
   }
 }
+
+// ======================= Profile Management =======================
+
+// 🔹 Get user profile
+export async function getUserProfile(token: string) {
+  try {
+    const response = await api.get("/api/profile/", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (err: unknown) {
+    handleError(err);
+  }
+}
+
+// 🔹 Update user profile
+export async function updateUserProfile(
+  data: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  },
+  token: string
+) {
+  try {
+    const response = await api.put("/api/profile/", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (err: unknown) {
+    handleError(err);
+  }
+}
+
+// 🔹 Change password
+export async function changePassword(
+  data: {
+    old_password: string;
+    new_password: string;
+  },
+  token: string
+) {
+  try {
+    const response = await api.post("/api/profile/change-password/", data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (err: unknown) {
+    handleError(err);
+  }
+}
+
+// 🔹 Delete account
+export async function deleteAccount(token: string) {
+  try {
+    const response = await api.delete("/api/profile/", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+  } catch (err: unknown) {
+    handleError(err);
+  }
+}

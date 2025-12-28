@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function PrivacyPolicyPage() {
   return (
     <div className="max-w-3xl mx-auto p-8 bg-background text-foreground rounded-xl shadow-lg">

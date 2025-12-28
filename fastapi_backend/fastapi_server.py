@@ -37,17 +37,6 @@ app.add_middleware(
 app.include_router(router)
 
 
-@app.get("/")
-def read_root():
-    """Root endpoint"""
-    return {"message": "Welcome to ChatPaat API"}
-
-
-@app.get("/health/")
-def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
-
 
 if __name__ == "__main__":
     import uvicorn

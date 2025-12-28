@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Settings, Bell, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,7 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
   const { currentTheme, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadNotifications] = useState(0);
 
   const isDark = currentTheme === "dark" || currentTheme !== "light";
 
@@ -121,10 +121,10 @@ export default function Navbar() {
                 </Button>
                 <Avatar 
                   className="h-8 w-8 ring-2 ring-primary/30 hover:ring-primary/60 transition-all cursor-pointer"
-                  onClick={() => navigate("/settings")}
+                  onClick={() => navigate("/profile")}
                   role="button"
                   tabIndex={0}
-                  aria-label="Open profile settings"
+                  aria-label="Open profile"
                 >
                   <AvatarImage src={user.image} alt={user.username} />
                   <AvatarFallback className="bg-primary/20 font-semibold">
