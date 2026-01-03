@@ -164,31 +164,6 @@ export async function updateUserProfile(
   }
 }
 
-// 🔹 Upload profile image
-export async function uploadProfileImage(
-  file: File,
-  token: string
-) {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    const response = await axios.post(
-      `${BASE_URL}/api/profile/upload-image/`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-    return response.data;
-  } catch (err: unknown) {
-    handleError(err);
-  }
-}
-
 // 🔹 Change password
 export async function changePassword(
   data: {
