@@ -24,13 +24,15 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:7004",
+        "http://localhost:7004",
         "http://localhost",
         "http://127.0.0.1",
         "*"  # Fallback for development
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    max_age=3600,
 )
 
 # Include routes

@@ -4,10 +4,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, User, Lock, Trash2 } from "lucide-react";
+import { ArrowLeft, User, Lock, Trash2, Upload } from "lucide-react";
 import {
   getUserProfile,
   updateUserProfile,
+  uploadProfileImage,
   changePassword,
   deleteAccount,
 } from "@/lib/api";
@@ -53,7 +54,7 @@ const CardContent = ({ children, className = "" }: { children: React.ReactNode; 
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const { addToast } = useToast();
 
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -61,6 +62,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"profile" | "password" | "delete">(
     "profile"
   );
+  const [previewImage, setPreviewImage] = useState<string | null>(user?.image || null);
 
   // Form states
   const [firstName, setFirstName] = useState("");
@@ -86,6 +88,7 @@ export default function ProfilePage() {
 
       const data = await getUserProfile(token);
       setProfileData(data);
+      setPreviewImage(data.image || null);
 
       // Pre-fill form fields
       setFirstName(data.first_name || "");
@@ -94,6 +97,45 @@ export default function ProfilePage() {
     } catch (err) {
       addToast({
         message: "Failed to load profile",
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ Handle Image Upload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Show preview immediately
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to server
+      const response = await uploadProfileImage(file, token);
+      
+      // Update local user context
+      if (response.user && response.user.image) {
+        updateUser({ image: response.user.image });
+      }
+
+      setProfileData(response.user);
+      addToast({
+        message: "Profile picture updated successfully",
+        type: "success",
+      });
+    } catch (err: any) {
+      setPreviewImage(user?.image || null); // Revert preview
+      addToast({
+        message: err.message || "Failed to upload image",
         type: "error",
       });
     } finally {
@@ -303,6 +345,56 @@ export default function ProfilePage() {
               <CardDescription>Update your profile details</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Profile Picture Upload Section */}
+              <div className="mb-6 pb-6 border-b border-border">
+                <label className="block text-sm font-medium mb-4">Profile Picture</label>
+                <div className="flex items-center gap-6">
+                  {/* Profile Image Preview */}
+                  <div className="flex-shrink-0">
+                    {previewImage ? (
+                      <img 
+                        src={previewImage} 
+                        alt="Profile" 
+                        className="h-24 w-24 rounded-full object-cover border-2 border-primary"
+                      />
+                    ) : (
+                      <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary/30">
+                        <User className="h-12 w-12 text-primary/50" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Upload Button */}
+                  <div>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={isLoading}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.parentElement?.querySelector('input[type="file"]')?.click();
+                        }}
+                        disabled={isLoading}
+                      >
+                        <Upload className="h-4 w-4" />
+                        {isLoading ? "Uploading..." : "Upload Picture"}
+                      </Button>
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      JPEG, PNG, GIF or WebP. Max 5MB.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 {/* Username (Read-only) */}
                 <div>

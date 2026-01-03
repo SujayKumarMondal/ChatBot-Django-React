@@ -12,8 +12,14 @@ export default function Navbar() {
   const { currentTheme, toggleDarkMode } = useTheme();
   const navigate = useNavigate();
   const [unreadNotifications] = useState(0);
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
 
   const isDark = currentTheme === "dark" || currentTheme !== "light";
+
+  const handleSignOutConfirm = () => {
+    setShowSignOutDialog(false);
+    signOut();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-gradient-to-r from-background via-background to-primary/5 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 shadow-lg">
@@ -114,8 +120,8 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hover:bg-destructive/20 transition-colors text-xs border-1 border-grey hover:border-white"
-                  onClick={signOut}
+                  className="hover:bg-destructive/20 transition-colors text-xs"
+                  onClick={() => setShowSignOutDialog(true)}
                 >
                   Sign Out
                 </Button>
@@ -136,6 +142,40 @@ export default function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Sign Out Confirmation Dialog */}
+      {showSignOutDialog && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999]"
+          onClick={() => setShowSignOutDialog(false)}
+        >
+          <div 
+            className="bg-background border border-border rounded-lg shadow-xl p-6 max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold mb-2">Sign Out?</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Are you sure you want to sign out? You'll need to sign in again to access your account.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSignOutDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleSignOutConfirm}
+              >
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
