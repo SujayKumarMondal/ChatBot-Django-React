@@ -306,6 +306,13 @@ def _exchange_code_for_tokens(code: str, redirect_uri: str) -> dict:
         "grant_type": "authorization_code",
     }
     resp = requests.post(token_url, data=data, timeout=10)
+    
+    if not resp.ok:
+        print(f"\n[ERROR] ❌ Google token exchange failed: {resp.status_code}")
+        print(f"  Response Text: {resp.text}\n")
+    else:
+        print(f"✅ Token exchange successful!")
+    
     resp.raise_for_status()
     return resp.json()
 
@@ -339,8 +346,10 @@ def google_exchange(req: GoogleExchangeRequest, db: Session = Depends(get_db)):
     try:
         token_data = _exchange_code_for_tokens(req.code, redirect_uri)
     except Exception as e:
+        error_msg = f"Failed to exchange code: {str(e)}"
+        print(f"[ERROR] {error_msg}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Failed to exchange code: {str(e)}")
+                            detail=error_msg)
 
     access_token = token_data.get("access_token")
     if not access_token:

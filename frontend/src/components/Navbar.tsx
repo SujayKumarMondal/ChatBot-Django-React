@@ -108,13 +108,13 @@ export default function Navbar() {
           ) : (
             <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
               <span className="hidden sm:block text-sm font-medium truncate max-w-[100px]">
-                {user.username}
+                {user.first_name ? user.first_name.split(' ')[0] : user.username}
               </span>
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hover:bg-destructive/20 transition-colors text-xs"
+                  className="hover:bg-destructive/20 transition-colors text-xs border-1 border-grey hover:border-white"
                   onClick={signOut}
                 >
                   Sign Out
@@ -128,7 +128,7 @@ export default function Navbar() {
                 >
                   <AvatarImage src={user.image} alt={user.username} />
                   <AvatarFallback className="bg-primary/20 font-semibold">
-                    {user.username[0]?.toUpperCase()}
+                    {user.first_name ? user.first_name[0]?.toUpperCase() : user.username[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </div>

@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "your_googl951884061600-pscth36b1shbipqnnclmq4dqk8pku8vi.apps.googleusercontent.come_client_id";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 export default function SignInPage() {
   const { signIn } = useAuth();
@@ -61,6 +61,9 @@ export default function SignInPage() {
           className="w-full mt-2"
           onClick={() => {
             const redirectUri = `${window.location.origin}/oauth-callback`;
+            console.log("🔐 Google OAuth Starting:");
+            console.log("  Client ID:", GOOGLE_CLIENT_ID);
+            console.log("  Redirect URI:", redirectUri);
             const params = new URLSearchParams({
               client_id: GOOGLE_CLIENT_ID,
               redirect_uri: redirectUri,
