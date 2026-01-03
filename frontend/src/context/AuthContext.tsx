@@ -21,6 +21,7 @@ interface AuthContextType {
   logout: () => void; // Alias for signOut, used in ProfilePage
   register: (username: string, email: string, password: string) => Promise<void>;
   storeUserSearch: (searchQuery: string) => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
   refreshTrigger: number; // Trigger for external components to refetch on auth change
 }
 
@@ -162,8 +163,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // 🔹 Update User (used for profile image and other updates)
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setRefreshTrigger(prev => prev + 1);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, signIn, signInWithTokens, signOut, logout, register, storeUserSearch, refreshTrigger }}>
+    <AuthContext.Provider value={{ user, token, signIn, signInWithTokens, signOut, logout, register, storeUserSearch, updateUser, refreshTrigger }}>
       {children}
     </AuthContext.Provider>
   );

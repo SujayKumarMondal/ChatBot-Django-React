@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 
-const BASE_URL = "http://127.0.0.1:7004";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:7004";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -132,6 +132,31 @@ export async function updateUserProfile(
     const response = await api.put("/api/profile/", data, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    return response.data;
+  } catch (err: unknown) {
+    handleError(err);
+  }
+}
+
+// 🔹 Upload profile image
+export async function uploadProfileImage(
+  file: File,
+  token: string
+) {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    const response = await axios.post(
+      `${BASE_URL}/api/profile/upload-image/`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
     return response.data;
   } catch (err: unknown) {
     handleError(err);
