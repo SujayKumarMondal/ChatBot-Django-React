@@ -10,6 +10,7 @@ from typing import Optional
 
 from db import get_db
 from models import CustomUser, Chat, ChatMessage, UserSearchHistory
+
 from auth import (
     hash_password, verify_password, create_access_token, 
     create_refresh_token, verify_token
@@ -424,6 +425,63 @@ def get_profile(
         "date_joined": user.date_joined
     }
 
+
+@router.post("/api/profile/upload-image/", tags=["Profile"])
+def upload_profile_image(
+    file: UploadFile = File(...),
+    authorization: str = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload user's profile image (stored as base64)
+    """
+    user = get_current_user(authorization, db)
+    
+    try:
+        # Read the uploaded file
+        contents = file.file.read()
+        
+        # Validate file size (max 5MB)
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File size must be less than 5MB"
+            )
+        
+        # Validate file type
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only JPEG, PNG, GIF, and WebP images are allowed"
+            )
+        
+        # Convert to base64
+        image_base64 = base64.b64encode(contents).decode('utf-8')
+        image_data_url = f"data:{file.content_type};base64,{image_base64}"
+        
+        # Save to database
+        user.image = image_data_url
+        db.commit()
+        db.refresh(user)
+        
+        return {
+            "message": "Profile image uploaded successfully",
+            "image": user.image,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "image": user.image
+            }
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error uploading image: {str(e)}"
+        )
 
 @router.put("/api/profile/", tags=["Profile"])
 def update_profile(
