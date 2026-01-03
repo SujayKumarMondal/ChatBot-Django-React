@@ -30,10 +30,6 @@ app.add_middleware(
         "*"  # Fallback for development
     ],
     allow_credentials=True,
-<<<<<<< HEAD
-=======
-    # allow_methods=["*"],
->>>>>>> 2946afa (Synced code of uat)
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     max_age=3600,
