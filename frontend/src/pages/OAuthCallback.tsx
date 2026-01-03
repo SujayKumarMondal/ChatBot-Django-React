@@ -23,7 +23,8 @@ const OAuthCallback = () => {
       const exchangeTokens = async () => {
         try {
           const redirectUri = `${window.location.origin}/oauth-callback`;
-          const response = await fetch('http://127.0.0.1:7004/api/auth/google/exchange/', {
+          const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:7004';
+          const response = await fetch(`${apiBaseUrl}/api/auth/google/exchange/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -35,7 +36,15 @@ const OAuthCallback = () => {
           });
 
           if (!response.ok) {
-            throw new Error('Failed to exchange tokens');
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Server error:', {
+              status: response.status,
+              statusText: response.statusText,
+              detail: errorData.detail,
+              redirectUri: redirectUri,
+              apiBaseUrl: apiBaseUrl,
+            });
+            throw new Error(`Token exchange failed: ${errorData.detail || response.statusText}`);
           }
 
           const data = await response.json();
@@ -58,6 +67,7 @@ const OAuthCallback = () => {
       <div className="text-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         <p className="mt-4 text-lg">Processing authentication...</p>
+        <p className="mt-2 text-sm text-gray-500">This may take a moment...</p>
       </div>
     </div>
   );
