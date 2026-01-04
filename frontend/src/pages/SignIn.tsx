@@ -53,6 +53,15 @@ export default function SignInPage() {
           required
         />
 
+          <p className="text-right text-xs mt-1">
+            <span
+              className="text-primary cursor-pointer hover:underline"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Forgot Password?
+            </span>
+          </p>
+
         <Button type="submit" className="w-full">Sign In</Button>
 
         <Button
