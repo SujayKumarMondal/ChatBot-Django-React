@@ -1,3 +1,4 @@
+# ======================= Imports =======================
 import os
 import uuid
 from datetime import datetime, timedelta
@@ -9,13 +10,11 @@ from pydantic import BaseModel
 from typing import Optional
 
 from db import get_db
-from models import CustomUser, Chat, ChatMessage, UserSearchHistory
-
+from models import CustomUser, Chat, ChatMessage, UserSearchHistory, PasswordResetToken
 from auth import (
-    hash_password, verify_password, create_access_token, 
-    create_refresh_token, verify_token
+    hash_password, verify_password, create_access_token,
+    create_refresh_token, verify_token, SECRET_KEY
 )
-
 # Google OAuth settings
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
@@ -24,8 +23,99 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 # Groq API settings
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_API_URL = os.getenv("GROQ_API_URL")
+from email_utils import send_email
 
+# ======================= Router =======================
 router = APIRouter()
+
+# ======================= Request Schemas =======================
+class PasswordResetRequest(BaseModel):
+    email: str
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+# ======================= Password Management Endpoints =======================
+@router.post("/api/auth/password-reset/", tags=["Authentication"])
+def password_reset(req: PasswordResetRequest, db: Session = Depends(get_db)):
+    """
+    Initiate password reset by sending a reset link to user's email.
+    
+    - **email**: User's email address
+    - Returns: Success message if email exists, silent if not
+    """
+    user = db.query(CustomUser).filter(CustomUser.email == req.email).first()
+    if user:
+        import secrets, hashlib
+        from auth import SECRET_KEY
+        from datetime import timezone
+        token = secrets.token_urlsafe(48)
+        token_hash = hashlib.sha256((token + SECRET_KEY).encode()).hexdigest()
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        # You may need to define PasswordResetToken in your models
+        prt = PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires_at, used=False)
+        db.add(prt)
+        db.commit()
+        reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
+        subject = "Password reset instructions"
+        body = f"Hello {user.username},\n\nWe received a request to reset your password. If you requested this, open the link below to set a new password:\n\n{reset_link}\n\nIf you didn't request this, you can safely ignore this email.\n\nThis link will expire in 1 hour."
+        try:
+            # Use SendGrid integration for email delivery
+            send_email(user.email, subject, body)
+        except Exception as e:
+            print(f"[password_reset] failed to send email: {e}")
+    return {"detail": "If an account with that email exists, instructions have been sent."}
+
+@router.post("/api/auth/password-reset/confirm/", tags=["Authentication"])
+def password_reset_confirm(req: PasswordResetConfirm, db: Session = Depends(get_db)):
+    """
+    Confirm password reset using token and set new password.
+    
+    - **token**: Password reset token from email link
+    - **new_password**: New password to set
+    - Returns: Success or error if token is invalid/expired
+    """
+    import hashlib
+    from auth import SECRET_KEY
+    from datetime import timezone
+    token_hash = hashlib.sha256((req.token + SECRET_KEY).encode()).hexdigest()
+    now = datetime.now(timezone.utc)
+    prt = db.query(PasswordResetToken).filter(PasswordResetToken.token_hash == token_hash, PasswordResetToken.used == False, PasswordResetToken.expires_at > now).first()
+    if not prt:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired token")
+    user = db.query(CustomUser).filter(CustomUser.id == prt.user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+    user.password = hash_password(req.new_password)
+    prt.used = True
+    db.add(user)
+    db.add(prt)
+    db.commit()
+    return {"detail": "Password has been reset. You can now sign in with your new password."}
+
+@router.post("/api/profile/change-password/", tags=["Profile"])
+def change_password(password_data: ChangePasswordRequest, authorization: str = Header(None), db: Session = Depends(get_db)):
+    """
+    Change password for authenticated user.
+    
+    - **old_password**: Current password
+    - **new_password**: New password to set
+    - **authorization**: Bearer token from header
+    - Returns: Success or error if old password is incorrect
+    """
+    user = get_current_user(authorization, db)
+    if not verify_password(password_data.old_password, user.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Old password is incorrect")
+    if password_data.new_password == password_data.old_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different from old password")
+    user.password = hash_password(password_data.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
 
 
 # ======================= Pydantic Schemas =======================
@@ -86,6 +176,9 @@ class UpdateProfileRequest(BaseModel):
     email: Optional[str] = None
 
 
+
+
+# ======================= ChangePasswordRequest Model =======================
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
@@ -421,7 +514,7 @@ def get_profile(
         "email": user.email,
         "first_name": user.first_name,
         "last_name": user.last_name,
-        "image": user.image,
+        # "image": user.image,
         "date_joined": user.date_joined
     }
 
@@ -461,20 +554,20 @@ def upload_profile_image(
         image_data_url = f"data:{file.content_type};base64,{image_base64}"
         
         # Save to database
-        user.image = image_data_url
+        # user.image = image_data_url
         db.commit()
         db.refresh(user)
         
         return {
             "message": "Profile image uploaded successfully",
-            "image": user.image,
+            # "image": user.image,
             "user": {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "image": user.image
+                # "image": user.image
             }
         }
     except Exception as e:
