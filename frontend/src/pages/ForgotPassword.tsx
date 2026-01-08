@@ -19,7 +19,7 @@ export default function ForgotPassword() {
         body: JSON.stringify({ email }),
       });
       if (!res.ok) throw new Error("Failed to request password reset");
-      setMessage("If an account with that email exists, you will receive instructions shortly.");
+      setMessage("If an account with that email exists, you will receive instructions shortly. Also check the spam box");
     } catch (err: any) {
       setError(err.message || "Failed to send request");
     }
