@@ -5,7 +5,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import vs2015 from "react-syntax-highlighter/dist/esm/styles/prism/atom-dark";
 import { Textarea } from "@/components/ui/textarea";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import TypingLoader from "@/components/TypingLoader";
 import LoginPrompt from "@/components/LoginPrompt";
 import { promptGPT } from "@/lib/api";
@@ -15,6 +15,7 @@ import { Link } from "react-router-dom";
 export default function Homepage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { chat_uid } = useParams();
   const { user, storeUserSearch } = useAuth();
   const [input, setInput] = useState("");
@@ -25,7 +26,7 @@ export default function Homepage() {
   >([{ role: "assistant", content: "Welcome! I'm here to assist you." }]);
 
   // Get JWT token from localStorage
-  const token = localStorage.getItem("access_token") || "";
+  const getToken = () => localStorage.getItem("access_token") || "";
 
   useEffect(() => {
     setChatID(chat_uid ? chat_uid : crypto.randomUUID());
@@ -40,7 +41,7 @@ export default function Homepage() {
   // 🔹 Send message
   const mutation = useMutation({
     mutationFn: ({ chat_id, content }: { chat_id: string; content: string }) =>
-      promptGPT({ chat_id, content }, token),
+      promptGPT({ chat_id, content }, getToken()),
     onSuccess: (res) => {
       console.log("Groq Response:", res);
       if (res?.reply) {
@@ -48,6 +49,8 @@ export default function Homepage() {
           ...prev,
           { role: "assistant", content: res.reply },
         ]);
+        // Invalidate chat data to ensure it's in sync
+        queryClient.invalidateQueries({ queryKey: ["chatMessages", chatID] });
       }
     },
     onError: (error: any) => {
@@ -65,9 +68,9 @@ export default function Homepage() {
   const { data: chatData } = useQuery({
     queryKey: ["chatMessages", chatID],
     queryFn: async () => {
-      const res = await fetch(`http://127.0.0.1:7004/chats/${chatID}`, {
+      const res = await fetch(`http://127.0.0.1:7004/get_chat_messages/${chatID}/`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${getToken()}`,
         },
       });
       if (!res.ok) return []; // prevent blank screen
@@ -118,6 +121,10 @@ export default function Homepage() {
 
     if (user) {
       storeUserSearch(input);
+      // Invalidate sidebar chats to show new chat immediately
+      queryClient.invalidateQueries({ queryKey: ["todaysChats"] });
+      queryClient.invalidateQueries({ queryKey: ["yesterdaysChats"] });
+      queryClient.invalidateQueries({ queryKey: ["sevenDaysChats"] });
     }
   };
 

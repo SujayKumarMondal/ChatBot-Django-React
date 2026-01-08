@@ -5,32 +5,49 @@ import {
   useState,
   ReactNode,
 } from "react";
+import { getProfileImageByEmail } from "@/lib/imageStorage";
 
 interface User {
   username: string;
   email: string;
   image?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
+  isLoading: boolean; // Track if auth is being restored from localStorage
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithTokens: (access: string, refresh: string, user: User) => void;
   signOut: () => void;
+  logout: () => void; // Alias for signOut, used in ProfilePage
   register: (username: string, email: string, password: string) => Promise<void>;
   storeUserSearch: (searchQuery: string) => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
+  refreshTrigger: number; // Trigger for external components to refetch on auth change
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Start as loading
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Restore user on refresh
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
+    const savedToken = localStorage.getItem("access_token");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+    if (savedToken) {
+      setToken(savedToken);
+    }
+    setIsLoading(false); // Auth restoration complete
   }, []);
 
   // 🔹 Sign In (JWT login with Django backend)
@@ -50,15 +67,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const data = await response.json();
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
+    setToken(data.access);
 
+    // Try to get stored image from localStorage, fallback to dicebear
+    const storedImage = getProfileImageByEmail(email);
     const userProfile: User = {
       username: data.user.username,
       email: data.user.email,
-      image: `https://api.dicebear.com/7.x/initials/svg?seed=${data.user.email}`,
+      image: storedImage || `https://api.dicebear.com/7.x/initials/svg?seed=${data.user.email}`,
     };
 
     setUser(userProfile);
     localStorage.setItem("user", JSON.stringify(userProfile));
+    setRefreshTrigger(prev => prev + 1); // Trigger refetch in sidebar
   } catch (err: any) {
     throw new Error(err.message || "Login failed");
   }
@@ -84,6 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Save tokens from register response
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
+      setToken(data.access);
 
       // Save user profile from register response
       const userProfile: User = {
@@ -94,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setUser(userProfile);
       localStorage.setItem("user", JSON.stringify(userProfile));
+      setRefreshTrigger(prev => prev + 1); // Trigger refetch in sidebar
     } catch (err: any) {
       throw new Error(err.message || "Registration failed");
     }
@@ -102,9 +125,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 🔹 Sign Out
   const signOut = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  // 🔹 Logout (alias for signOut, used in ProfilePage)
+  const logout = () => {
+    signOut();
+  };
+
+  // 🔹 Sign In With Tokens (used by OAuth callback)
+  const signInWithTokens = (access: string, refresh: string, userProfile: User) => {
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+    setToken(access);
+    
+    // Try to get stored image from localStorage for this user
+    const storedImage = getProfileImageByEmail(userProfile.email);
+    const profileWithStoredImage = {
+      ...userProfile,
+      image: storedImage || userProfile.image,
+    };
+    
+    setUser(profileWithStoredImage);
+    localStorage.setItem("user", JSON.stringify(profileWithStoredImage));
+    setRefreshTrigger(prev => prev + 1);
   };
 
   // 🔹 Store User Search
@@ -131,8 +179,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // 🔹 Update User (used for profile image and other updates)
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setRefreshTrigger(prev => prev + 1);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut, register, storeUserSearch }}>
+    <AuthContext.Provider value={{ user, token, isLoading, signIn, signInWithTokens, signOut, logout, register, storeUserSearch, updateUser, refreshTrigger }}>
       {children}
     </AuthContext.Provider>
   );

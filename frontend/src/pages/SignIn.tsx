@@ -4,6 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
 export default function SignInPage() {
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -51,7 +53,39 @@ export default function SignInPage() {
           required
         />
 
+          <p className="text-right text-xs mt-1">
+            <span
+              className="text-primary cursor-pointer hover:underline"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Forgot Password?
+            </span>
+          </p>
+
         <Button type="submit" className="w-full">Sign In</Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full mt-2"
+          onClick={() => {
+            const redirectUri = `${window.location.origin}/oauth-callback`;
+            console.log("🔐 Google OAuth Starting:");
+            console.log("  Client ID:", GOOGLE_CLIENT_ID);
+            console.log("  Redirect URI:", redirectUri);
+            const params = new URLSearchParams({
+              client_id: GOOGLE_CLIENT_ID,
+              redirect_uri: redirectUri,
+              response_type: "code",
+              scope: "openid email profile",
+              access_type: "offline",
+              prompt: "consent",
+            });
+            window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+          }}
+        >
+          Sign in with Google
+        </Button>
         <p className="text-center text-sm">
           Don’t have an account?{" "}
           <span
