@@ -120,7 +120,7 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hover:bg-destructive/20 transition-colors text-xs"
+                  className="hover:bg-destructive/20 transition-colors text-xs border-2 border-white hover:border-white"
                   onClick={() => setShowSignOutDialog(true)}
                 >
                   Sign Out

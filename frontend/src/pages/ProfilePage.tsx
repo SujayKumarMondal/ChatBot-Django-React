@@ -12,6 +12,7 @@ import {
   changePassword,
   deleteAccount,
 } from "@/lib/api";
+import { storeProfileImage } from "@/lib/imageStorage";
 
 interface ProfileData {
   username: string;
@@ -115,14 +116,18 @@ export default function ProfilePage() {
       // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewImage(reader.result as string);
+        const imageData = reader.result as string;
+        setPreviewImage(imageData);
+        
+        // Store image in localStorage with user email as key
+        storeProfileImage(user?.email || "", imageData);
       };
       reader.readAsDataURL(file);
 
       // Upload to server
       const response = await uploadProfileImage(file, token);
       
-      // Update local user context
+      // Update local user context with server image
       if (response.user && response.user.image) {
         updateUser({ image: response.user.image });
       }
@@ -366,28 +371,27 @@ export default function ProfilePage() {
                   
                   {/* Upload Button */}
                   <div>
-                    <label className="cursor-pointer">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={isLoading}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="gap-2"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.currentTarget.parentElement?.querySelector('input[type="file"]')?.click();
-                        }}
-                        disabled={isLoading}
-                      >
-                        <Upload className="h-4 w-4" />
-                        {isLoading ? "Uploading..." : "Upload Picture"}
-                      </Button>
-                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={isLoading}
+                      className="hidden"
+                      id="profile-image-input"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById("profile-image-input")?.click();
+                      }}
+                      disabled={isLoading}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {isLoading ? "Uploading..." : "Upload Picture"}
+                    </Button>
                     <p className="text-xs text-muted-foreground mt-2">
                       JPEG, PNG, GIF or WebP. Max 5MB.
                     </p>

@@ -107,6 +107,32 @@ export async function deleteChat(chatId: string, token: string) {
 
 // ======================= Profile Management =======================
 
+// 🔹 Upload profile image
+export async function uploadProfileImage(
+  file: File,
+  token: string
+) {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    const response = await axios.post(
+      `${BASE_URL}/api/profile/upload-image/`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (err: unknown) {
+    handleError(err);
+  }
+}
+
+
 // 🔹 Get user profile
 export async function getUserProfile(token: string) {
   try {
@@ -132,31 +158,6 @@ export async function updateUserProfile(
     const response = await api.put("/api/profile/", data, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return response.data;
-  } catch (err: unknown) {
-    handleError(err);
-  }
-}
-
-// 🔹 Upload profile image
-export async function uploadProfileImage(
-  file: File,
-  token: string
-) {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    const response = await axios.post(
-      `${BASE_URL}/api/profile/upload-image/`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
     return response.data;
   } catch (err: unknown) {
     handleError(err);

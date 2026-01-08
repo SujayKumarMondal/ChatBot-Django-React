@@ -17,7 +17,7 @@ class CustomUser(Base):
     password = Column(String(128), nullable=False)
     first_name = Column(String(150), nullable=False, default='')
     last_name = Column(String(150), nullable=False, default='')
-    image = Column(Text, nullable=True)  # Store base64 or image URL
+    # image = Column(Text, nullable=True)  # Store base64 or image URL
     is_active = Column(Boolean, default=True)
     is_staff = Column(Boolean, default=False)
     is_superuser = Column(Boolean, default=False)
@@ -83,3 +83,21 @@ class UserSearchHistory(Base):
     
     def __str__(self):
         return f"{self.user.username}: {self.search_query[:50]}"
+
+
+# Password Reset Token Model
+class PasswordResetToken(Base):
+    __tablename__ = "chatpaat_app_passwordresettoken"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("chatpaat_app_customuser.id"), nullable=False, index=True)
+    token_hash = Column(String(128), nullable=False, index=True)
+    used = Column(Boolean, default=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship
+    user = relationship("CustomUser")
+
+    def __str__(self):
+        return f"PasswordResetToken(user_id={self.user_id}, used={self.used})"

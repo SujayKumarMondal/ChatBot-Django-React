@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database Configuration
+# Default to SQLite for local development
+USE_POSTGRES = os.getenv("USE_POSTGRES", "").lower() == "true"
 DB_NAME = os.getenv("DB_NAME", "")
 DB_USER = os.getenv("DB_USER", "")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
@@ -17,12 +19,14 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 encoded_password = quote(DB_PASSWORD, safe='')
 
 # Create connection string
-# If DB_NAME is not set, fall back to a local sqlite database for easy local dev.
-if DB_NAME:
+# Use SQLite by default for easy local development
+if USE_POSTGRES and DB_NAME:
     DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 else:
+    # Default to SQLite for local development
     sqlite_path = os.path.join(os.path.dirname(__file__), "db.sqlite3")
     DATABASE_URL = f"sqlite:///{sqlite_path}"
+    print(f"[DATABASE] Using SQLite: {sqlite_path}")
 
 # Create engine
 engine = create_engine(
