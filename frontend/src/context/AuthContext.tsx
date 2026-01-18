@@ -139,17 +139,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // 🔹 Sign In With Tokens (used by OAuth callback)
   const signInWithTokens = (access: string, refresh: string, userProfile: User) => {
+    // Store tokens immediately
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
-    setToken(access);
     
-    // Try to get stored image from localStorage for this user
+    // Update state - store immediately in localStorage first to ensure persistence
     const storedImage = getProfileImageByEmail(userProfile.email);
     const profileWithStoredImage = {
       ...userProfile,
       image: storedImage || userProfile.image,
     };
     
+    // Update all state synchronously
+    setToken(access);
     setUser(profileWithStoredImage);
     localStorage.setItem("user", JSON.stringify(profileWithStoredImage));
     setRefreshTrigger(prev => prev + 1);
