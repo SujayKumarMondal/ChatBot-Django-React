@@ -76,7 +76,11 @@ export default function LoginPrompt() {
         <p className="text-lg text-muted-foreground mb-8">
           Sign in to start chatting with your AI assistant and experience smart,
           real-time conversations.
+          <p>
+            It can make mistakes, check wisely before you act!
+          </p>
         </p>
+          
 
         {/* Buttons */}
         <div className="flex flex-col gap-3">

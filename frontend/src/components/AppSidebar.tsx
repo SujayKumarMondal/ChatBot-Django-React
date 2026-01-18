@@ -50,9 +50,8 @@ export function AppSidebar() {
   const [recentChats, setRecentChats] = useState<IChat[]>([]);
   const [yesterdaysChats, setYesterdaysChat] = useState<IChat[]>([]);
   const [sevenDaysChats, setSevenDaysChat] = useState<IChat[]>([]);
-  const { user, refreshTrigger } = useAuth();
+  const { user, refreshTrigger, token } = useAuth();
   const { addToast } = useToast();
-  const token = localStorage.getItem("access_token") || "";
   const [searchQuery, setSearchQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -115,7 +114,7 @@ export function AppSidebar() {
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [token]);
+  }, [token, user]);
 
   const toggleFavorite = (chatId: string) => {
     const updateChats = (chats: IChat[]) =>
@@ -132,6 +131,15 @@ export function AppSidebar() {
 
   const handleDeleteChat = async (chatId: string) => {
     try {
+      // Ensure token is available
+      if (!token) {
+        addToast({
+          type: "error",
+          message: "Authentication required. Please log in.",
+          duration: 3000,
+        });
+        return;
+      }
       // Call API to delete chat from database
       await deleteChat(chatId, token);
 
