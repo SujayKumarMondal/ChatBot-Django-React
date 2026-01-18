@@ -374,8 +374,10 @@ export function AppSidebar() {
             <Archive className="h-4 w-4" />
             {showArchived ? "Hide" : "Show"} Archived
           </Button>
-          <Link
-            to="/about-me"
+          <a
+            href="https://sujaykumarmondal.github.io/portfolio/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center justify-between bg-gradient-to-r from-primary/20 to-accent/20 hover:from-primary/30 hover:to-accent/30 px-3 py-2 rounded-md transition text-xs font-medium border border-primary/20"
           >
             <span className="flex items-center gap-2">
@@ -385,7 +387,7 @@ export function AppSidebar() {
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
               Check
             </Badge>
-          </Link>
+          </a>
         </div>
       </SidebarContent>
 

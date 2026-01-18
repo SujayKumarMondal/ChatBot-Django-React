@@ -36,7 +36,7 @@ export default function Navbar() {
             </div>
           </div>
           <span className="text-xs md:text-sm font-medium text-muted-foreground hidden md:block">
-            Your AI Assistant
+            Your AI Assistant. It can make mistakes, check wisely before you act.
           </span>
         </div>
 
